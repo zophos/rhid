@@ -1,5 +1,7 @@
 #
+# rhid/win32.rb -- HID class access library for Win32API
 #
+# NISHI Takao <zophos@koka-in.org>
 #
 require 'rhid'
 
@@ -8,6 +10,11 @@ require 'dl/struct'
 
 class RHid
     module Win32
+
+        ##################################################################
+        #
+        # API Declaring
+        #
         module Api
             extend DL::Importable
             
@@ -21,9 +28,9 @@ class RHid
             DIGCF_PRESENT=0x02
             DIGCF_DEVICEINTERFACE=0x10
             
-            HidP_Input = 0
-            HidP_Output = 1
-            HidP_Feature = 2
+            HidP_Input=0
+            HidP_Output=1
+            HidP_Feature=2
             
             
             dlload('kernel32.dll',
@@ -33,7 +40,7 @@ class RHid
             GUID=
                 struct([
                            'long  data1',
-                       'short data2',
+                           'short data2',
                            'short data3',
                            'char  data4[8]'
                        ])
@@ -253,7 +260,7 @@ _EOS_
         #
         #
         def open_by_id(vendor_id,product_id,&block)
-            raise IOError if @handle
+            raise(IOError,'Already opened') if @handle
 
             guid=Api::GUID.malloc
             Api.hidD_GetHidGuid(guid)
@@ -270,48 +277,52 @@ _EOS_
             hidda.cbSize=hidda.size
             
             i=0
-            while(Api.setupDiEnumDeviceInterfaces(dis,0,guid,i,did))
-                begin
-                    ret=
-                        Api.setupDiGetDeviceInterfaceDetailA(dis,did,nil,0,sz,0)
-                    s=sz.to_a('L')[0]
-                    didd=Api::SP_DEVICE_INTERFACE_DETAIL_DATA.malloc(s)
-                    didd.cbSize=5
-                    
-                    ret=
-                        Api.setupDiGetDeviceInterfaceDetailA(dis,did,didd,s,nil,0)
-                    raise DoRetryError if ret==0
-                    
-                    @path=didd.to_ptr[4,s-didd.cbSize]
-                    @handle=Api.createFileA(@path,
-                                            Api::GENERIC_READ|
-                                                Api::GENERIC_WRITE,
+            begin
+                raise Errno::ENOENT if Api.setupDiEnumDeviceInterfaces(dis,
+                                                                       0,
+                                                                       guid,
+                                                                       i,
+                                                                       did
+                                                                       )==0
+                ret=
+                    Api.setupDiGetDeviceInterfaceDetailA(dis,did,nil,0,sz,0)
+                s=sz.to_a('L')[0]
+                didd=Api::SP_DEVICE_INTERFACE_DETAIL_DATA.malloc(s)
+                didd.cbSize=5
+                
+                ret=
+                    Api.setupDiGetDeviceInterfaceDetailA(dis,did,didd,s,nil,0)
+                raise DoRetryError if ret==0
+                
+                @path=didd.to_ptr[4,s-didd.cbSize]
+                @handle=Api.createFileA(@path,
+                                        Api::GENERIC_READ|
+                                            Api::GENERIC_WRITE,
                                             Api::FILE_SHARE_READ|
-                                                Api::FILE_SHARE_WRITE,
-                                            nil,
-                                            Api::OPEN_EXISTING,
-                                            0,0)
-                    raise DoRetryError if @handle==-1
-                    
-                    ret=Api.hidD_GetAttributes(@handle,hidda)
-                    
-                    raise DoRetryError if ret==0
-                    
-                    
-                    break if(hidda.vendorID==vendor_id &&
-                                 hidda.productID==product_id)
-                    
-                    raise DoRetryError
-                rescue DoRetryError
-                    Api.cloaseHandle(@handle) if (@handle&&@handle!=-1)
-                    @handle=nil
-                    @path=nil
-                    i+=1
-                end
+                                            Api::FILE_SHARE_WRITE,
+                                        nil,
+                                        Api::OPEN_EXISTING,
+                                        0,0)
+                raise DoRetryError if @handle==-1
+                
+                ret=Api.hidD_GetAttributes(@handle,hidda)
+                
+                raise DoRetryError if (ret==0 ||
+                                           hidda.vendorID!=vendor_id ||
+                                           hidda.productID!=product_id)
+            rescue DoRetryError
+                Api.cloaseHandle(@handle) if (@handle&&@handle!=-1)
+                @handle=nil
+                @path=nil
+                i+=1
+                retry
+            rescue Errno::ENOENT
+                @handle=nil
+                @path=nil
+                raise
+            ensure
+                Api.setupDiDestroyDeviceInfoList(dis)
             end
-            Api.setupDiDestroyDeviceInfoList(dis)
-
-            raise Errno::ENOENT unless @handle
             
             ObjectSpace.define_finalizer(self,RHid.finalize(@handle))
             if(block)
@@ -331,7 +342,7 @@ _EOS_
         #
         #
         def open_by_path(path,&block)
-            raise IOError if @handle
+            raise(IOError,'Already opened') if @handle
 
             @handle=Api.createFileA(path,
                                     Api::GENERIC_READ|

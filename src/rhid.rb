@@ -1,5 +1,7 @@
 #
+# rhid.rb -- HID class access library
 #
+# NISHI Takao <zophos@koka-in.org>
 #
 class RHid
     class DoRetryError<StandardError;end

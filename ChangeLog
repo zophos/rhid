@@ -1,0 +1,8 @@
+2009-09-20  NISHI Takao  <zophos@koka-in.org>
+
+	* src/rhid/win32.rb (RHid::Win32::open_by): fixed
+	Api.setupDiEnumDeviceInterfaces() bug
+
+	* src/rhid.rb: added some comments
+
+	* ChangeLog: added
