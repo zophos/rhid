@@ -311,7 +311,7 @@ _EOS_
                                            hidda.vendorID!=vendor_id ||
                                            hidda.productID!=product_id)
             rescue DoRetryError
-                Api.cloaseHandle(@handle) if (@handle&&@handle!=-1)
+                Api.closeHandle(@handle) if (@handle&&@handle!=-1)
                 @handle=nil
                 @path=nil
                 i+=1

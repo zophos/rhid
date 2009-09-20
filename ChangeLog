@@ -1,6 +1,10 @@
 2009-09-20  NISHI Takao  <zophos@koka-in.org>
 
-	* src/rhid/win32.rb (RHid::Win32::open_by): fixed
+	* src/rhid/win32.rb (RHid::Win32::open_by_id): fixed typo
+
+2009-09-20  NISHI Takao  <zophos@koka-in.org>
+
+	* src/rhid/win32.rb (RHid::Win32::open_by_id): fixed
 	Api.setupDiEnumDeviceInterfaces() bug
 
 	* src/rhid.rb: added some comments
