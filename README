@@ -1,0 +1,22 @@
+
+RHid  -- Ruby USB HID class access library
+
+NISHI Takao <zophos@koka-in.org>
+
+= What's RHid
+
+RHid is Ruby USB HID class access library.
+
+= Requirements
+
+* Windows XP/vista/2003
+* Ruby 1.8 or higher (MSWIN/Cygwin)
+
+= Copying
+
+Copyright (c) 2009 NISHI Takao <zophos@koka-in.org> All rights reserved.
+This is free software with ABSOLUTELY NO WARRANTY.
+
+You can redistribute it and/or modify it under the terms of Ruby's licence.
+
+Comments, suggestions, patches and beers are welcome.
