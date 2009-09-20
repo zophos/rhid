@@ -34,13 +34,8 @@ class RHid
         @capabilities=nil
         super
     end
-
-    def read
-        super
+    def <<(data)
+        self.write
+        self
     end
-
-    def write(data)
-        super
-    end
-    alias << write
 end

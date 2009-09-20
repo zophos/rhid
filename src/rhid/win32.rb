@@ -152,7 +152,7 @@ _EOS_
                    )
 
             extern(<<_EOS_
-long ReadFile(long,char *,long,long *,long)
+long ReadFile(long,void *,long,long *,long)
 _EOS_
                    )
 
