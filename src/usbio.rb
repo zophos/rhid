@@ -4,12 +4,11 @@
 # NISHI Takao <zophos@koka-in.org>
 #
 require 'rhid/win32'
+require 'thread'
 
 class UsbIo
-    ON=0
-    OFF=1
-    Lo=0
-    Hi=1
+    ON=Lo=0
+    OFF=Hi=1
     
     class Port
         def initialize(bit_num=8,init_val=Hi)
@@ -25,14 +24,14 @@ class UsbIo
         end
         def []=(x,n)
             x=x.to_i
-            raise ArgumentError if(n!=Lo&&n!=Hi)
-            raise ArgumentError if(x>=@bits.size)
+            raise ArgumentError if((n!=Lo&&n!=Hi)||(x>=@bits.size))
             @bits[x]=n
         end
         def toggle(x)
             raise ArgumentError if(x>=@bits.size)
-            @bits[x]^=OFF
+            @bits[x]^=Hi
         end
+
         def to_s
             [@bits.join('')].pack('b*')
         end
@@ -44,18 +43,16 @@ class UsbIo
         end
 
         def from_i(val)
-            @bits=
-                [val.to_i].pack('C*').unpack('b*')[0].split(//)[
-                0...@bits.size
-            ].map{|x|
+            @bits=[val.to_i].pack('C*').unpack('b*')[0].split(//).map{|x|
                 x.to_i
-            }
+            }[0...@bits.size]
         end
     end
 
     def initialize(vendor_id=0x12ed,product_id=0x1003)
+        @port=[Port.new(8),Port.new(4)].freeze
+        @mutex=Mutex.new
         @seq=1
-        @port=[Port.new(8),Port.new(4)]
         self.open(vendor_id,product_id)
     end
     attr_reader :port
@@ -72,17 +69,24 @@ class UsbIo
     end
 
     def write(port=nil)
+        cmd=nil
         case port
         when nil
-            @connector.write("\x0\x1"+@port[0].to_s)+
-                @connector.write("\x0\x2"+@port[1].to_s)
+            return self.write(0)+self.write(1)
         when 0
-            @connector.write("\x0\x1"+@port[0].to_s)
+            cmd=0x01
         when 1
-            @connector.write("\x0\x2"+@port[1].to_s)
+            cmd=0x02
         else
             raise ArgumentError
         end
+
+        ret=nil
+        @mutex.synchronize{
+            ret=@connector.write(_build_request(cmd,@port[port]))
+        }
+
+        ret
     end
 
     def read(port=nil)
@@ -91,40 +95,44 @@ class UsbIo
         when nil
             return self.read(0)+self.read(1)
         when 0
-            scmd=3
+            cmd=0x03
         when 1
-            scmd=4
+            cmd=0x04
         else
             raise ArgumentError
         end
 
-        #
-        # set sequence number to the query
-        #
-        @seq=[@seq+1].pack('n').unpack('n')[0]
-        @connector.write([scmd].pack('n')+
-                             "\xff"+
-                             [self.__id__].pack('N')+
-                             [@seq].pack('n'))
+        val=nil
+        @mutex.synchronize{
+            @connector.write(_build_request(cmd,0xff))
 
-        #
-        # compare command and sequence number between the query with
-        # the reply to discard the driver's pre-fetched reply.
-        #
-        begin
-            (rcmd,val,id,seq)=@connector.read.unpack('nCNn')
-            raise RHid::DoRetryError if((rcmd!=scmd)||
-                                            (id!=self.__id__)||
-                                            (seq!=@seq))
-        rescue RHid::DoRetryError
-            retry
-        end
+            #
+            # compare command and sequence number between the query with
+            # the reply to discard pre-fetched replies.
+            #
+            begin
+                (rcmd,val,oid,seq)=_parse_reply(@connector.read)
+                raise RHid::DoRetryError if((rcmd!=cmd)||
+                                                (oid!=self.__id__)||
+                                                (seq!=@seq))
+            rescue RHid::DoRetryError
+                retry
+            end
+        }
 
         @port[port].from_i(val)
     end
 
-    def exec(port,bit,val)
-        @port[port][bit]=val
-        self.write(port)
+    private
+    def _build_request(cmd,val)
+        #
+        # set sequence number to the request message
+        #
+        @seq=[@seq+1].pack('n').unpack('n')[0]
+        [cmd.to_i,val.to_i,self.__id__,@seq].pack('nCNn')
+    end
+
+    def _parse_reply(rpl)
+        rpl.unpack('nCNn')
     end
 end

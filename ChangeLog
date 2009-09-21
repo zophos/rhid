@@ -1,5 +1,12 @@
 2009-09-21  NISHI Takao  <zophos@koka-in.org>
 
+	* src/usbio.rb: made thread safe
+
+	* src/mr999.rb: modified some action timings.
+	  - MR999::grip: renames to MR999::grasp. 
+
+2009-09-21  NISHI Takao  <zophos@koka-in.org>
+	
 	* src/rhid/win32.rb (RHid::Win32::Api): fixed ReadFile() 2nd
 	argument type.
 
