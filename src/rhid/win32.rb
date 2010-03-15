@@ -227,7 +227,7 @@ _EOS_
                    )
 
             extern(<<_EOS_
-long SetupDiGetClassDevsA(GUID *,char *,long,long)
+long SetupDiGetClassDevsA(GUID *,void *,long,long)
 _EOS_
                    )
 
@@ -264,7 +264,7 @@ _EOS_
 
             guid=Api::GUID.malloc
             Api.hidD_GetHidGuid(guid)
-            dis=Api.setupDiGetClassDevsA(guid,'',0,
+            dis=Api.setupDiGetClassDevsA(guid,nil,0,
                                          Api::DIGCF_PRESENT|
                                              Api::DIGCF_DEVICEINTERFACE)
 
