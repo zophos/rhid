@@ -1,7 +1,8 @@
 2010-03-16  NISHI Takao  <zophos@koka-in.org>
 
 	* src/rhid/win32.rb (RHid::Win32::Api): SetupDiGetClassDevsA() 2nd
-	argument changed from char * to void * to avoid error on Windows7 
+	argument changed from char * to void * to avoid error on Windows7. 
+	(RHid::Win32#open_by_id, etc): substitute DL.malloc for DL.strdup.
 
 2009-09-21  NISHI Takao  <zophos@koka-in.org>
 

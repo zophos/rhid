@@ -271,7 +271,7 @@ _EOS_
             did=Api::SP_DEVICE_INTERFACE_DATA.malloc
             did.cbSize=Api::SP_DEVICE_INTERFACE_DATA.size
             
-            sz=DL.strdup("\0"*DL::sizeof('L'))
+            sz=DL.malloc(DL::sizeof('L'))
             
             hidda=Api::HIDD_ATTRIBUTES.malloc
             hidda.cbSize=hidda.size
@@ -394,7 +394,7 @@ _EOS_
             raise IOError unless @handle
             return @capabilities if @capabilities
 
-            preparsed_data=DL.strdup("\0"*DL::sizeof('L'))
+            preparsed_data=DL.malloc(DL::sizeof('L'))
             if(Api.hidD_GetPreparsedData(@handle,preparsed_data)==1)
                 caps=Api::HIDP_CAPS.malloc
                 unless(Api.hidP_GetCaps(preparsed_data.to_a('L')[0],caps)==0)
@@ -439,8 +439,8 @@ _EOS_
             self.capabilities
             raise IOError unless @capabilities
 
-            buf=DL.strdup("\0"*@capabilities.inputReportByteLength)
-            sz=DL.strdup("\0"*DL::sizeof('L'))
+            buf=DL.malloc(@capabilities.inputReportByteLength)
+            sz=DL.malloc(DL::sizeof('L'))
             ret=Api.readFile(@handle,
                              buf,
                              @capabilities.inputReportByteLength,
@@ -468,7 +468,7 @@ _EOS_
                 data+="\xff"*(@capabilities.outputReportByteLength-sz)
             end
 
-            sz=DL.strdup("\0"*DL::sizeof('L'))
+            sz=DL.malloc(DL::sizeof('L'))
             ret=Api.writeFile(@handle,
                               data,
                               @capabilities.outputReportByteLength,
